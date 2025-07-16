@@ -1,24 +1,45 @@
-# Compiled class file
-*.class
+//Elimina filas en blanco
+function eliminarFilasEnBlanco() {
+  var hoja = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var rango = hoja.getDataRange();
+  var filas = rango.getValues();
+  
+  for (var i = filas.length - 1; i >= 0; i--) {
+    var fila = filas[i];
+    var esFilaEnBlanco = true;
+    
+    for (var j = 0; j < fila.length; j++) {
+      if (fila[j] !== "") {
+        esFilaEnBlanco = false;
+        break;
+      }
+    }
+    
+    if (esFilaEnBlanco) {
+      hoja.deleteRow(i + 1);
+    }
+  }
+}
 
-# Log file
-*.log
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-# BlueJ files
-*.ctxt
+//Funcion para realizar backup de la hoja
+function makeCopy() {
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+// generates the timestamp and stores in variable formattedDate as year-month-date hour-minute-second
+var formattedDate = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd'_'HH:mm:ss");
 
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
+// gets the name of the original file and appends the word "copy" followed by the timestamp stored in formattedDate
+//var name = SpreadsheetApp.getActiveSpreadsheet().getName() + "_COPY_SEC_ADM_" + formattedDate;
+var name ="respaldo_base_desarrollo_" + formattedDate;
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+// gets the destination folder by their ID. REPLACE xxxxxxxxxxxxxxx with your folder's ID that you can get by opening the folder in Google Drive and checking the URL in the browser's address bar
+var destination = DriveApp.getFolderById("xxxxxxxxxxxxxxxxx");
+
+// gets the current Google Sheet file
+var file = DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId())
+
+// makes copy of "file" with "name" at the "destination"
+file.makeCopy(name, destination);
+}
