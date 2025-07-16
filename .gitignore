@@ -43,3 +43,92 @@ var file = DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId())
 // makes copy of "file" with "name" at the "destination"
 file.makeCopy(name, destination);
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//Funcion para eliminar formato de celdas combinadas cuando se copia de otro lugar
+function eliminarCeldasCombinadas() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hoja = ss.getSheetByName("sec_adm_sitrareg");
+  
+  // Verificar si la hoja existe
+  if (!hoja) {
+    SpreadsheetApp.getUi().alert("Hoja 'sec_adm_sitrareg' no encontrada");
+    return;
+  }
+
+  try {
+    // Llamar a Sheets API para obtener rangos combinados
+    const response = Sheets.Spreadsheets.get(ss.getId(), {
+      ranges: hoja.getSheetName(),
+      fields: 'sheets(data(merges))'
+    });
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Sirve para descargar en formato CSV una hoja sobre las actas desde GTR
+//Cambio el toekn
+//Esta funcion solo trabaja en implementación web, en caso de dar baja cambiar a nueva version.
+
+function doGet(e) {
+  // 🔐 Verificar que exista el parámetro 'token' y sea correcto
+  const tokenEsperado = 'estaachevereesto2025';
+  if (!e || !e.parameter || e.parameter.token !== tokenEsperado) {
+    return ContentService.createTextOutput('Acceso denegado: token inválido');
+  }
+
+  const sheetName = e.parameter.sheet || 'sec_gen_actas';
+  let fileName = e.parameter.name || 'actas_secretaria';
+
+  // 📅 Agregar la fecha actual al nombre del archivo (formato YYYY-MM-DD)
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const fecha = `${yyyy}-${mm}-${dd}`;
+
+  // 🧼 Limpiar el nombre del archivo (sin acentos ni caracteres raros)
+  fileName = fileName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  fileName = fileName.replace(/[^a-zA-Z0-9_\-]/g, "_");
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    return ContentService.createTextOutput('Hoja no encontrada: ' + sheetName);
+  }
+
+  const data = sheet.getDataRange().getValues();
+  let csv = '';
+
+  data.forEach((row) => {
+    csv += row.map(col => `"${String(col).replace(/"/g, '""')}"`).join(',') + '\n';
+  });
+
+  const output = ContentService.createTextOutput(csv);
+  output.setMimeType(ContentService.MimeType.CSV);
+  output.downloadAsFile(`${fileName}_${fecha}.csv`);
+  return output;
+}
+
+    const merges = response.sheets[0]?.data[0]?.merges || [];
+    
+    // Deshacer combinaciones de manera segura
+    merges.reverse().forEach(merge => {
+      const range = hoja.getRange(
+        merge.startRowIndex + 1,
+        merge.startColumnIndex + 1,
+        merge.endRowIndex - merge.startRowIndex,
+        merge.endColumnIndex - merge.startColumnIndex
+      );
+      range.breakApart(); // Conserva contenido
+    });
+    
+    SpreadsheetApp.getUi().alert("Celdas combinadas eliminadas con éxito");
+    
+  } catch (e) {
+    SpreadsheetApp.getUi().alert("Error: " + e.message);
+  }
+}
